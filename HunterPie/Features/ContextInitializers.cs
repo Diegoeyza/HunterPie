@@ -22,7 +22,8 @@ internal static class ContextInitializers
         typeof(MHWContextInitializer),
         typeof(MHRContextInitializer),
         typeof(GameSaveBackupService),
-        typeof(QuestTrackerService)
+        typeof(QuestTrackerService),
+        typeof(HuntFileDumpService)
     };
 
     public static Task InitializeAsync(Context context)
