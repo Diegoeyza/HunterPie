@@ -21,6 +21,7 @@ internal class PartyMemberStatisticsService : IHuntStatisticsService<PartyMember
 
     private float _currentDamage;
     private Weapon _weapon;
+    private GearStatusModel? _gear;
 
 
     public PartyMemberStatisticsService(IContext context, IPartyMember partyMember)
@@ -29,6 +30,16 @@ internal class PartyMemberStatisticsService : IHuntStatisticsService<PartyMember
         _context = context;
         _name = partyMember.Name;
         _weapon = partyMember.Weapon;
+
+        // Gear fingerprint (analytics): snapshot the local player's weapon
+        // stats now (quest start), before mid-hunt buffs change them.
+        // Party members' Status is not mapped, so theirs stays null.
+        if (partyMember.IsMyself && context.Game.Player.Status is { } status)
+            _gear = new GearStatusModel(
+                Raw: status.RawDamage,
+                Element: status.ElementalDamage,
+                Affinity: status.Affinity
+            );
 
         HookEvents();
     }
@@ -51,6 +62,7 @@ internal class PartyMemberStatisticsService : IHuntStatisticsService<PartyMember
         return new(
             Name: _name,
             Weapon: _weapon,
+            Gear: _gear,
             Damages: _damages.ToArray(),
             Abnormalities: _abnormalities.Select(pair => new AbnormalityModel(Id: pair.Key, Activations: pair.Value.ToArray())).ToArray(),
             IsHunterPieUser: _partyMember.IsMyself
