@@ -8,6 +8,7 @@ namespace HunterPie.Integrations.Poogie.Statistics.Models;
 internal record PoogiePlayerStatisticsModel(
     [property: JsonProperty("name")] string Name,
     [property: JsonProperty("weapon")] Weapon Weapon,
+    [property: JsonProperty("gear")] PoogieGearStatusModel? Gear,
     [property: JsonProperty("damages")] PoogiePlayerDamageStatisticsModel[] Damages,
     [property: JsonProperty("abnormalities")] PoogieAbnormalityStatisticsModel[] Abnormalities,
     [property: JsonProperty("is_hunterpie_user")] bool IsHunterPieUser
@@ -16,6 +17,7 @@ internal record PoogiePlayerStatisticsModel(
     public PartyMemberModel ToEntity() => new PartyMemberModel(
         Name: Name,
         Weapon: Weapon,
+        Gear: Gear?.ToEntity(),
         Damages: Damages.Select(it => it.ToEntity()).ToArray(),
         Abnormalities: Abnormalities.Select(it => it.ToEntity()).ToArray(),
         IsHunterPieUser: IsHunterPieUser
@@ -25,6 +27,7 @@ internal record PoogiePlayerStatisticsModel(
         new PoogiePlayerStatisticsModel(
             Name: model.Name,
             Weapon: model.Weapon,
+            Gear: model.Gear is null ? null : PoogieGearStatusModel.From(model.Gear),
             Damages: model.Damages.Select(PoogiePlayerDamageStatisticsModel.From).ToArray(),
             Abnormalities: model.Abnormalities.Select(PoogieAbnormalityStatisticsModel.From).ToArray(),
             IsHunterPieUser: model.IsHunterPieUser
