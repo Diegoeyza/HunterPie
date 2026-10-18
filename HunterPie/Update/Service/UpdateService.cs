@@ -32,6 +32,15 @@ internal class UpdateService(
 {
     private readonly ILogger _logger = LoggerFactory.Create();
     private const string JUST_UPDATED_KEY = "JustUpdated";
+
+    // Analytics-export fork: never let the official updater replace our
+    // patched assemblies (it would silently remove the local hunt-export
+    // feature this fork exists for). BUT game patches are handled purely by
+    // the offset maps under Address\ (and localization under Languages\), which
+    // are data. So we let the updater refresh ONLY those directories and
+    // freeze everything else.
+    private static readonly string[] UpdatableDataDirs = { "Address", "Languages" };
+    private const string LAST_DATA_SYNC_KEY = "AnalyticsLastDataSyncVersion";
     private readonly LocalizationUpdateService _localizationUpdateService = localizationUpdateService;
     private readonly UpdateGateway _gateway = gateway;
     private readonly ChecksumService _checksumService = checksumService;
@@ -46,8 +55,10 @@ internal class UpdateService(
         _updateCleanUpUseCase.Invoke();
         await OpenPatchNotesIfNeeded();
 
-        if (!ClientConfig.Config.Client.EnableAutoUpdate)
-            return false;
+        // NOTE (fork): no longer gated on ClientConfig.Config.Client.EnableAutoUpdate.
+        // This path no longer updates code, only the offset maps/localization the
+        // fork needs to support new game patches, so turning "auto update" off
+        // (a common thing to do) must not break game support.
 
         UpdateViewModel vm = new();
         var view = new UpdateView { DataContext = vm };
@@ -82,22 +93,14 @@ internal class UpdateService(
         if (version is null)
             return false;
 
-        if (ClientConfig.Config.Client.EnableAutoUpdateConfirmation)
-        {
-            string title = _localizationRepository.FindStringBy("//Strings/Client/Dialogs/Dialog[@Id='UPDATE_TITLE_STRING']");
-            string descritpion = _localizationRepository
-                    .FindStringBy("//Strings/Client/Dialogs/Dialog[@Id='UPDATE_CONFIRMATION_DESCRIPTION_STRING']")
-                    .Replace("{Latest}", $"{version}");
+        // Fork: this sync only refreshes offset maps and localization, so we
+        // don't prompt (the "update HunterPie to {version}?" dialog would be
+        // misleading) and we don't re-download a package whose data we already
+        // applied.
+        string? lastSyncedVersion = await _localRegistryAsync.GetAsync<string>(LAST_DATA_SYNC_KEY);
 
-            NativeDialogResult result = DialogManager.Warn(
-                title: title,
-                description: descritpion,
-                buttons: NativeDialogButtons.Accept | NativeDialogButtons.Reject
-            );
-
-            if (result != NativeDialogResult.Accept)
-                return false;
-        }
+        if (version.ToString() == lastSyncedVersion)
+            return false;
 
         try
         {
@@ -118,7 +121,7 @@ internal class UpdateService(
 
             ReplaceFiles(vm, extractedPackagePath, checksums);
             CleanUp(vm, extractedPackagePath, packageFile);
-            await _localRegistryAsync.SetAsync("JustUpdated", true);
+            await _localRegistryAsync.SetAsync(LAST_DATA_SYNC_KEY, version.ToString());
             return true;
         }
         catch (Exception err)
@@ -246,7 +249,8 @@ internal class UpdateService(
 
         IEnumerable<string> updateFiles = checksums.Remote
             .Where(it => !checksums.Local.ContainsKey(it.Key) || checksums.Local[it.Key] != it.Value)
-            .Select(it => it.Key);
+            .Select(it => it.Key)
+            .Where(IsUpdatableDataFile);
 
         foreach (string relativeFilePath in updateFiles)
         {
@@ -270,6 +274,20 @@ internal class UpdateService(
                 destFileName: localFile
             );
         }
+    }
+
+    // Fork: only files under the data directories (offset maps, localization)
+    // may be replaced. Our patched assemblies are never touched by the official
+    // updater.
+    private static bool IsUpdatableDataFile(string relativeFilePath)
+    {
+        foreach (string dir in UpdatableDataDirs)
+        {
+            if (relativeFilePath.StartsWith(dir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private void CleanUp(UpdateViewModel vm, string packagePath, string packageFile)
