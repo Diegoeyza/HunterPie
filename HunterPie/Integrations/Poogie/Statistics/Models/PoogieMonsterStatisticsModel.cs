@@ -14,6 +14,7 @@ internal record PoogieMonsterStatisticsModel(
     [property: JsonProperty("max_health")] float MaxHealth,
     [property: JsonProperty("crown")] Crown Crown,
     [property: JsonProperty("enrage")] PoogieMonsterStatusStatisticsModel Enrage,
+    [property: JsonProperty("ailments")] PoogieMonsterAilmentStatisticsModel[]? Ailments,
     [property: JsonProperty("hunt_started_at")] DateTime? HuntStartedAt,
     [property: JsonProperty("hunt_finished_at")] DateTime? HuntFinishedAt,
     [property: JsonProperty("hunt_type")] MonsterHuntType? HuntType,
@@ -25,6 +26,10 @@ internal record PoogieMonsterStatisticsModel(
         MaxHealth: MaxHealth,
         Crown: Crown,
         Enrage: Enrage.ToEntity(),
+        Ailments: Ailments?.ToDictionary(
+            it => it.Id,
+            it => it.ToEntity()
+        ) ?? new Dictionary<string, MonsterStatusModel>(),
         HuntStartedAt: HuntStartedAt,
         HuntFinishedAt: HuntFinishedAt,
         HuntType: HuntType,
@@ -39,6 +44,7 @@ internal record PoogieMonsterStatisticsModel(
             MaxHealth: model.MaxHealth,
             Crown: model.Crown,
             Enrage: PoogieMonsterStatusStatisticsModel.From(model.Enrage),
+            Ailments: model.Ailments.Select(PoogieMonsterAilmentStatisticsModel.From).ToArray(),
             HuntStartedAt: model.HuntStartedAt,
             HuntFinishedAt: model.HuntFinishedAt,
             HuntType: model.HuntType,

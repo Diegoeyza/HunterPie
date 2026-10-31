@@ -11,6 +11,7 @@ internal record MonsterModel(
     Crown Crown,
     VariantType Variant,
     MonsterStatusModel Enrage,
+    Dictionary<string, MonsterStatusModel> Ailments,
     DateTime? HuntStartedAt,
     DateTime? HuntFinishedAt,
     MonsterHuntType? HuntType,
