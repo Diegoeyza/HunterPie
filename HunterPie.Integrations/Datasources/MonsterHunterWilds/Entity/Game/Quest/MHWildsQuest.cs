@@ -111,6 +111,14 @@ public sealed class MHWildsQuest(
         TimeLeft = TimeSpan.FromMilliseconds(data.Information.MaxTimer - data.Information.Timer);
     }
 
+    /// <summary>
+    /// Updates the death counter from the quest-end scan, before
+    /// <c>OnQuestEnd</c> is dispatched. The normal update path is skipped once
+    /// the quest is over, so a wipe's final cart would otherwise be exported
+    /// as max_deaths - 1.
+    /// </summary>
+    internal void UpdateDeaths(int deaths) => Deaths = deaths;
+
     public void Dispose()
     {
         IDisposableExtensions.DisposeAll(

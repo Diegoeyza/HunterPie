@@ -58,7 +58,10 @@ internal class QuestTrackerService(
         if (!await _accountUseCase.IsValidSessionAsync() || !_accountConfig.IsHuntUploadEnabled)
             return;
 
-        HuntStatisticsModel exported = _statisticsService.Export();
+        HuntStatisticsModel exported = _statisticsService.Export(
+            e.Status,
+            includeEngagedMonsters: false
+        );
 
         if (e.Status != QuestStatus.Success || !ShouldUpload(exported))
         {
