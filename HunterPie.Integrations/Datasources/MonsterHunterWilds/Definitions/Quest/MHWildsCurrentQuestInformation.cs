@@ -16,6 +16,12 @@ public struct MHWildsCurrentQuestInformation
 
     public QuestStatus ToQuestStatus()
     {
+        // FailureState is set for time-up, wipe and killed-target failures
+        // even when SuccessState has not been updated yet. Without this,
+        // those failures read as InProgress and never reach the dump service.
+        if (FailureState > 0)
+            return QuestStatus.Fail;
+
         return (SuccessState, Timer) switch
         {
             (1, _) => QuestStatus.Quit,

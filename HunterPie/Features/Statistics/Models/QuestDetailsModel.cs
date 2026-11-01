@@ -8,5 +8,6 @@ public record QuestDetailsModel(
     int Deaths,
     int MaxDeaths,
     QuestLevel Level,
-    int Stars
+    int Stars,
+    bool? Cleared = null
 );

@@ -15,7 +15,8 @@ namespace HunterPie.Features.Statistics.Services;
 /// <summary>
 /// Analytics-fork addition (not upstream): mirrors <see cref="QuestTrackerService"/>
 /// but writes the quest-end payload to a local JSON file instead of uploading it.
-/// No account, no network — one file per successful hunt, safe to re-import.
+/// No account, no network — one file per completed hunt (success or failure),
+/// safe to re-import. Failed attempts are written with <c>quest.cleared=false</c>.
 /// </summary>
 internal class HuntFileDumpService : IContextInitializer, IDisposable
 {
@@ -73,11 +74,22 @@ internal class HuntFileDumpService : IContextInitializer, IDisposable
 
         try
         {
-            HuntStatisticsModel exported = _statisticsService.Export();
-
-            if (e.Status != QuestStatus.Success || exported.Monsters.Count == 0)
+            // Success and failure both produce a dump. Quit/None/InProgress
+            // (manual abandons, no quest) stay out.
+            if (e.Status is not (QuestStatus.Success or QuestStatus.Fail))
             {
-                _logger.Debug($"Hunt not dumped (status: {e.Status}, monsters: {exported.Monsters.Count})");
+                _logger.Debug($"Hunt not dumped (status: {e.Status})");
+                return;
+            }
+
+            HuntStatisticsModel exported = _statisticsService.Export(
+                e.Status,
+                includeEngagedMonsters: e.Status == QuestStatus.Fail
+            );
+
+            if (exported.Monsters.Count == 0)
+            {
+                _logger.Debug($"Hunt not dumped (status: {e.Status}, monsters: 0)");
                 return;
             }
 

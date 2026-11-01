@@ -249,6 +249,28 @@ public sealed class MHWildsGame : CommonGame
 
         if (_quest is not null && isOver)
         {
+            // The death counter updates on the same scan that ends the quest,
+            // but this branch dispatched before reading it: a cart wipe's last
+            // cart was exported as max_deaths - 1. Capture the final count
+            // before exporting, and trust FailureState == 2 (wipe) as proof
+            // that every allowed cart was used.
+            MHWildsEncryptedInteger finalDeaths = await Memory.DerefAsync<MHWildsEncryptedInteger>(
+                address: AddressMap.GetAbsolute("Game::QuestManager"),
+                offsets: AddressMap.GetOffsets("Quest::DieCount")
+            );
+
+            long deaths = finalDeaths.Decode();
+            if (deaths < 0 || deaths > 9)
+                deaths = _quest.Deaths;
+            deaths = Math.Max(deaths, _quest.Deaths);
+
+            if (information.FailureState == 2)
+                deaths = Math.Max(deaths, Math.Max(
+                    information.MaxDeaths.Decode(),
+                    _quest.MaxDeaths
+                ));
+
+            _quest.UpdateDeaths((int)deaths);
             _stopwatch.Restart();
 
             this.Dispatch(

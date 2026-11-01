@@ -10,7 +10,9 @@ public record PoogieQuestDetailsModel(
     [property: JsonProperty("deaths")] int Deaths,
     [property: JsonProperty("max_deaths")] int MaxDeaths,
     [property: JsonProperty("level")] QuestLevel Level,
-    [property: JsonProperty("stars")] int Stars
+    [property: JsonProperty("stars")] int Stars,
+    [property: JsonProperty("cleared",
+        NullValueHandling = NullValueHandling.Ignore)] bool? Cleared = null
 )
 {
     public QuestDetailsModel ToEntity() =>
@@ -20,7 +22,8 @@ public record PoogieQuestDetailsModel(
             Deaths: Deaths,
             MaxDeaths: MaxDeaths,
             Level: Level,
-            Stars: Stars
+            Stars: Stars,
+            Cleared: Cleared
         );
 
     public static PoogieQuestDetailsModel From(QuestDetailsModel model) =>
@@ -30,6 +33,7 @@ public record PoogieQuestDetailsModel(
             Deaths: model.Deaths,
             MaxDeaths: model.MaxDeaths,
             Level: model.Level,
-            Stars: model.Stars
+            Stars: model.Stars,
+            Cleared: model.Cleared
         );
 }

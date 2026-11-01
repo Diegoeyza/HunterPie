@@ -3,6 +3,7 @@ using HunterPie.Core.Crypto;
 using HunterPie.Core.Extensions;
 using HunterPie.Core.Game;
 using HunterPie.Core.Game.Entity.Enemy;
+using HunterPie.Core.Game.Entity.Game.Quest;
 using HunterPie.Core.Game.Entity.Party;
 using HunterPie.Core.Game.Enums;
 using HunterPie.Features.Statistics.Models;
@@ -29,7 +30,20 @@ internal class HuntStatisticsService : IHuntStatisticsService<HuntStatisticsMode
         HookEvents();
     }
 
-    public HuntStatisticsModel Export()
+    public HuntStatisticsModel Export() =>
+        Export(
+            _context.Game.Quest?.Status ?? QuestStatus.None,
+            includeEngagedMonsters: false
+        );
+
+    /// <summary>
+    /// Exports the current hunt. <paramref name="status"/> is passed explicitly
+    /// because the quest object's own status can still be stale at quest end.
+    /// Failed attempts pass <paramref name="includeEngagedMonsters"/> so a
+    /// monster that was damaged (lost at least 1% HP) but never enraged is
+    /// still recorded. A monster with only a trace HP change is a bystander.
+    /// </summary>
+    public HuntStatisticsModel Export(QuestStatus status, bool includeEngagedMonsters)
     {
         QuestDetailsModel? questModel = _context.Game.Quest switch
         {
@@ -39,7 +53,13 @@ internal class HuntStatisticsService : IHuntStatisticsService<HuntStatisticsMode
                 Deaths: quest.Deaths,
                 MaxDeaths: quest.MaxDeaths,
                 Level: quest.Level,
-                Stars: quest.Stars
+                Stars: quest.Stars,
+                Cleared: status switch
+                {
+                    QuestStatus.Success => true,
+                    QuestStatus.Fail or QuestStatus.Quit => false,
+                    _ => null
+                }
             ),
             _ => null
         };
@@ -48,7 +68,10 @@ internal class HuntStatisticsService : IHuntStatisticsService<HuntStatisticsMode
             .ToList();
 
         var monsters = _monsterStatisticsServices.Select(s => s.Export())
-            .Where(it => it.Enrage.Activations.Length > 0 || it.Ailments.Count > 0)
+            .Where(it => it.Enrage.Activations.Length > 0
+                         || it.Ailments.Count > 0
+                         || (includeEngagedMonsters
+                             && it.HealthSteps.Any(step => step.Percentage <= 0.99)))
             .ToList();
 
         return new HuntStatisticsModel(
