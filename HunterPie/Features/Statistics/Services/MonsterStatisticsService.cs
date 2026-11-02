@@ -3,6 +3,7 @@ using HunterPie.Core.Game;
 using HunterPie.Core.Game.Entity.Enemy;
 using HunterPie.Core.Game.Enums;
 using HunterPie.Features.Statistics.Models;
+using HunterPie.Integrations.Datasources.MonsterHunterWilds.Entity.Enemy;
 using System;
 using System.Collections.Generic;
 
@@ -72,7 +73,8 @@ internal class MonsterStatisticsService : IHuntStatisticsService<MonsterModel>
             HuntFinishedAt: _huntEnd,
             HuntType: _huntType,
             Variant: _variant,
-            HealthSteps: _healthSteps
+            HealthSteps: _healthSteps,
+            IsTarget: _monster is MHWildsMonster wilds ? wilds.IsQuestTarget : null
         );
     }
 

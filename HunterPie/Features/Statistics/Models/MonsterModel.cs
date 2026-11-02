@@ -15,5 +15,6 @@ internal record MonsterModel(
     DateTime? HuntStartedAt,
     DateTime? HuntFinishedAt,
     MonsterHuntType? HuntType,
-    List<MonsterHealthStepModel> HealthSteps
+    List<MonsterHealthStepModel> HealthSteps,
+    bool? IsTarget = null
 );

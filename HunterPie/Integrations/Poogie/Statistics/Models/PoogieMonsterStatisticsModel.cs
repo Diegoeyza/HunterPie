@@ -18,7 +18,9 @@ internal record PoogieMonsterStatisticsModel(
     [property: JsonProperty("hunt_started_at")] DateTime? HuntStartedAt,
     [property: JsonProperty("hunt_finished_at")] DateTime? HuntFinishedAt,
     [property: JsonProperty("hunt_type")] MonsterHuntType? HuntType,
-    [property: JsonProperty("health_steps")] List<PoogieMonsterHealthStepModel>? HealthSteps
+    [property: JsonProperty("health_steps")] List<PoogieMonsterHealthStepModel>? HealthSteps,
+    [property: JsonProperty("is_target",
+        NullValueHandling = NullValueHandling.Ignore)] bool? IsTarget = null
 )
 {
     public MonsterModel ToEntity() => new(
@@ -35,7 +37,8 @@ internal record PoogieMonsterStatisticsModel(
         HuntType: HuntType,
         Variant: (VariantType?)Variant ?? VariantType.Normal,
         HealthSteps: HealthSteps?.Select(it => it.ToEntity())
-            .ToList() ?? new List<MonsterHealthStepModel>()
+            .ToList() ?? new List<MonsterHealthStepModel>(),
+        IsTarget: IsTarget
     );
 
     public static PoogieMonsterStatisticsModel From(MonsterModel model) =>
@@ -49,6 +52,7 @@ internal record PoogieMonsterStatisticsModel(
             HuntFinishedAt: model.HuntFinishedAt,
             HuntType: model.HuntType,
             Variant: (int)model.Variant,
-            HealthSteps: model.HealthSteps.Select(PoogieMonsterHealthStepModel.From).ToList()
+            HealthSteps: model.HealthSteps.Select(PoogieMonsterHealthStepModel.From).ToList(),
+            IsTarget: model.IsTarget
         );
 }
