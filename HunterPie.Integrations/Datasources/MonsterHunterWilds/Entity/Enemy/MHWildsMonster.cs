@@ -27,6 +27,16 @@ public sealed class MHWildsMonster : CommonMonster
 {
     private int _targetKey;
     private bool _isDeadOrCaptured;
+
+    /// <summary>
+    /// Whether this monster is one of the current quest's objectives.
+    /// Null when the game has not exposed a quest target list (e.g. an
+    /// expedition or an older scan), so callers can fall back to heuristics.
+    /// </summary>
+    public bool? IsQuestTarget => _targetKeyManager.HasQuestTargets()
+        ? _targetKeyManager.IsQuestTarget(_targetKey)
+        : null;
+
     private readonly MonsterDefinition _definition;
     private readonly MHWildsMonsterBasicData _basicData;
     private bool _isInitialized;

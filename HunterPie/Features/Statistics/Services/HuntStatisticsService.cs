@@ -18,6 +18,9 @@ namespace HunterPie.Features.Statistics.Services;
 
 internal class HuntStatisticsService : IHuntStatisticsService<HuntStatisticsModel>
 {
+    // A non-target monster must lose more than 60% HP to count as fought.
+    private const double EngagementHpFloor = 0.40;
+
     private readonly IContext _context;
     private readonly DateTime _startedAt = DateTime.UtcNow;
     private readonly List<IHuntStatisticsService<MonsterModel>> _monsterStatisticsServices = new();
@@ -67,12 +70,37 @@ internal class HuntStatisticsService : IHuntStatisticsService<HuntStatisticsMode
         var players = _partyMembersStatisticsServices.Select(s => s.Export())
             .ToList();
 
-        var monsters = _monsterStatisticsServices.Select(s => s.Export())
-            .Where(it => it.Enrage.Activations.Length > 0
-                         || it.Ailments.Count > 0
-                         || (includeEngagedMonsters
-                             && it.HealthSteps.Any(step => step.Percentage <= 0.99)))
+        var exportedMonsters = _monsterStatisticsServices.Select(s => s.Export())
             .ToList();
+        bool hasTargets = exportedMonsters.Any(it => it.IsTarget == true);
+
+        var monsters = exportedMonsters.Where(it =>
+        {
+            // Quest targets are always relevant, including speedruns that kill
+            // before the first enrage/ailment.
+            if (it.IsTarget == true)
+                return true;
+
+            // Non-targets must have lost more than 60% HP. This keeps
+            // turf-war bystanders out while still recording a monster the
+            // party actually fought.
+            if (hasTargets)
+                return it.HealthSteps.Any(step =>
+                    step.Percentage < EngagementHpFloor);
+
+            // No target identity available (old dump/expedition): fall back to
+            // the previous heuristics. Successful legacy hunts also accept
+            // slain/captured monsters, which covers speedruns without enrage
+            // or ailments.
+            return it.Enrage.Activations.Length > 0
+                   || it.Ailments.Count > 0
+                   || (status == QuestStatus.Success
+                       && (it.HuntType is MonsterHuntType.Slay or MonsterHuntType.Capture
+                           || it.HealthSteps.Any(step =>
+                               step.Percentage < EngagementHpFloor)))
+                   || (includeEngagedMonsters
+                       && it.HealthSteps.Any(step => step.Percentage <= 0.99));
+        }).ToList();
 
         return new HuntStatisticsModel(
             Game: GetGameType(),
