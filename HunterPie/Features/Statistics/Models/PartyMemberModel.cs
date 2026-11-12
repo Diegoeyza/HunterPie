@@ -8,5 +8,7 @@ internal record PartyMemberModel(
     GearStatusModel? Gear,
     PlayerDamageFrameModel[] Damages,
     AbnormalityModel[] Abnormalities,
+    // Hunter rank at quest time (null for CPU companions).
+    int? HunterRank,
     bool IsHunterPieUser
 );

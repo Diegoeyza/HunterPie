@@ -65,6 +65,10 @@ internal class PartyMemberStatisticsService : IHuntStatisticsService<PartyMember
             Gear: _gear,
             Damages: _damages.ToArray(),
             Abnormalities: _abnormalities.Select(pair => new AbnormalityModel(Id: pair.Key, Activations: pair.Value.ToArray())).ToArray(),
+            // CPU companions have a fabricated rank (100); keep them blank.
+            HunterRank: _partyMember.Type == MemberType.Companion
+                ? null
+                : _partyMember.MasterRank,
             IsHunterPieUser: _partyMember.IsMyself
         );
     }

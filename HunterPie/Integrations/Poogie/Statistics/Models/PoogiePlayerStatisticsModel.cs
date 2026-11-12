@@ -11,6 +11,7 @@ internal record PoogiePlayerStatisticsModel(
     [property: JsonProperty("gear")] PoogieGearStatusModel? Gear,
     [property: JsonProperty("damages")] PoogiePlayerDamageStatisticsModel[] Damages,
     [property: JsonProperty("abnormalities")] PoogieAbnormalityStatisticsModel[] Abnormalities,
+    [property: JsonProperty("hunter_rank")] int? HunterRank,
     [property: JsonProperty("is_hunterpie_user")] bool IsHunterPieUser
 )
 {
@@ -20,6 +21,7 @@ internal record PoogiePlayerStatisticsModel(
         Gear: Gear?.ToEntity(),
         Damages: Damages.Select(it => it.ToEntity()).ToArray(),
         Abnormalities: Abnormalities.Select(it => it.ToEntity()).ToArray(),
+        HunterRank: HunterRank,
         IsHunterPieUser: IsHunterPieUser
     );
 
@@ -30,6 +32,7 @@ internal record PoogiePlayerStatisticsModel(
             Gear: model.Gear is null ? null : PoogieGearStatusModel.From(model.Gear),
             Damages: model.Damages.Select(PoogiePlayerDamageStatisticsModel.From).ToArray(),
             Abnormalities: model.Abnormalities.Select(PoogieAbnormalityStatisticsModel.From).ToArray(),
+            HunterRank: model.HunterRank,
             IsHunterPieUser: model.IsHunterPieUser
         );
 }
